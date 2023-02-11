@@ -1,0 +1,15 @@
+[package]
+name = "xmttr"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1.24.2", features = ["macros", "rt-multi-thread"] }
+tokio-modbus = "*"
+tokio-core = "0.1"
+tokio-serial = "5.4.1"
+futures = "0.3"
+csv = "1.1.6"
+serde = { version = "1.0.152", features = ["derive"] }
