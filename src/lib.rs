@@ -1,5 +1,6 @@
 pub mod connect_and_read;
 pub mod modbusmap;
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ModbusReg {
@@ -43,10 +44,21 @@ mod tests {
             match mod_main(&my_map) {
                 Ok(_res) => {
                     println!("success!");
+                    assert_eq!(1,1);
                     //println!("ok {:?}", res);
                 }
                 Err(e) => println!("error {} {:?}", i, e),
             }
         }
+    }
+    #[test]
+    fn hashmap() {
+        use std::collections::HashMap;
+        use super::modbusmap::build_hashmap;
+        let path = String::from("ModbusMap.csv");
+        let my_hmap: HashMap<u16,String> = build_hashmap(&path);
+        let reg: u16 = 247; //mass flow rate should return type F32
+        let reg_type: String = my_hmap.get(&reg).unwrap().to_string();
+        assert_eq!("F32", reg_type);
     }
 }

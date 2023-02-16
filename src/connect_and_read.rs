@@ -6,19 +6,21 @@ use tokio_serial::SerialPortBuilder;
 pub async fn mod_main(my_map: &Vec<ModbusReg>) -> Result<(), Box<dyn std::error::Error>> {
     use tokio_modbus::prelude::*;
     use tokio_serial::SerialStream;
-    //let tty_path: &str = "COM9";
-    let tty_path = "/dev/ttyACM0";
+    
+    let tty_path: &str = get_com_port();
+    //let tty_path = "/dev/ttyACM0";
     // modbus slave address 111
     let slave: Slave = Slave(0x6F);
     let builder: SerialPortBuilder = tokio_serial::new(tty_path, 38400);
     //error handling for no device
     let port: SerialStream = SerialStream::open(&builder).expect("No device detected");
-    let mut ctx: Context = rtu::connect_slave(port, slave).await?;
+    let mut ctx: Context = rtu::connect_slave(port, slave).await?; //this connects to modem but not device
     println!("Connected to device at {}", &tty_path);
     //read float register
     let mut count = 0;
     while count < 10 {
         let addr: u16 = 246;
+        // this will hang if no device connected.
         let rsp: Result<Vec<u16>, std::io::Error> = ctx.read_holding_registers(addr, 2).await;
         match rsp {
             Ok(data) => {
@@ -27,7 +29,7 @@ pub async fn mod_main(my_map: &Vec<ModbusReg>) -> Result<(), Box<dyn std::error:
             }
             Err(e) => println!("Reg {} type {} produced: {:?}", addr, "U16", e),
         }
-        thread::sleep(Duration::from_millis(1000));
+        thread::sleep(Duration::from_millis(500));
         count = count + 1;
     }
 
@@ -46,4 +48,15 @@ pub fn read_f32_reg(read_bytes: Vec<u16>) -> f32 {
     //convert be_bytes to float
     let float_value: f32 = f32::from_be_bytes(new_bytes);
     float_value
+}
+
+#[cfg(target_os = "windows")]
+pub fn get_com_port() -> &'static str {
+    let tty_path: &str = "COM9";
+    tty_path
+}
+#[cfg(target_os = "linux")]
+pub fn get_com_port() -> &'static str {
+    let tty_path: &str = "/dev/ttyACM0";
+    tty_path
 }

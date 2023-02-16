@@ -1,11 +1,8 @@
 use super::*;
 use csv::Reader;
-//use std::env;
 use std::fs::File;
-//use std::path::PathBuf;
+
 pub fn read_map(path: &str) -> Vec<ModbusReg> {
-    //let path: PathBuf = std::env::current_dir().unwrap();
-    //println!("dir = {:?}", path.display());
     let file: File = File::open(path).unwrap();
     let mut rdr: Reader<File> = Reader::from_reader(file);
     let mut mapdata: Vec<ModbusReg> = Vec::new();
@@ -26,4 +23,22 @@ pub fn read_map(path: &str) -> Vec<ModbusReg> {
         }
     }
     return mapdata;
+}
+pub fn build_hashmap(path: &str) -> HashMap<u16,String> {
+    let file: File = File::open(path).unwrap();
+    let mut rdr: Reader<File> = Reader::from_reader(file);
+    let mut hmap: HashMap<u16,String> = HashMap::new();
+    for result in rdr.records() {
+        let record = result.unwrap();
+        let reg_type = record.get(0).unwrap().to_string();
+        let addr = record
+            .get(1)
+            .unwrap()
+            .to_string()
+            .parse::<u16>()
+            .ok()
+            .unwrap();
+        hmap.entry(addr).or_insert(reg_type);
+    }
+    return hmap;
 }
