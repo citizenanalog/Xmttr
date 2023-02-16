@@ -33,26 +33,25 @@ mod tests {
     fn connection_test() {
         use super::*;
         use connect_and_read::mod_main;
-        use modbusmap::read_map;
+        use modbusmap::build_hashmap;
         println!("Running Main");
         //let res = vec![0 as u16];
         let path = String::from("ModbusMap.csv");
-        let my_map: Vec<ModbusReg> = read_map(&path);
+        let my_hmap: HashMap<u16,String> = build_hashmap(&path);
         //for loop if we want to call mod_main multiple times
-        for i in 1..2 {
+        
             //match connect::read(252) {
-            match mod_main(&my_map) {
+            match mod_main(&my_hmap) {
                 Ok(_res) => {
                     println!("success!");
                     assert_eq!(1,1);
                     //println!("ok {:?}", res);
                 }
-                Err(e) => println!("error {} {:?}", i, e),
+                Err(e) => println!("error  {:?}", e),
             }
-        }
     }
     #[test]
-    fn hashmap() {
+    fn build_hashmap() {
         use std::collections::HashMap;
         use super::modbusmap::build_hashmap;
         let path = String::from("ModbusMap.csv");

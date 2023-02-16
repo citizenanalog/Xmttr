@@ -3,7 +3,7 @@ use std::{thread, time::Duration};
 use tokio_modbus::client::Context;
 use tokio_serial::SerialPortBuilder;
 #[tokio::main(flavor = "current_thread")]
-pub async fn mod_main(my_map: &Vec<ModbusReg>) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn mod_main(my_map: &HashMap<u16,String>) -> Result<(), Box<dyn std::error::Error>> {
     use tokio_modbus::prelude::*;
     use tokio_serial::SerialStream;
     
