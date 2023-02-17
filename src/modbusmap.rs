@@ -24,10 +24,10 @@ pub fn read_map(path: &str) -> Vec<ModbusReg> {
     }
     return mapdata;
 }
-pub fn build_hashmap(path: &str) -> HashMap<u16,String> {
+pub fn build_hashmap(path: &str) -> HashMap<u16, String> {
     let file: File = File::open(path).unwrap();
     let mut rdr: Reader<File> = Reader::from_reader(file);
-    let mut hmap: HashMap<u16,String> = HashMap::new();
+    let mut hmap: HashMap<u16, String> = HashMap::new();
     for result in rdr.records() {
         let record = result.unwrap();
         let reg_type = record.get(0).unwrap().to_string();
