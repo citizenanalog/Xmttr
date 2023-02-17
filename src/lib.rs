@@ -60,4 +60,27 @@ mod tests {
         let reg_type: String = my_hmap.get(&reg).unwrap().to_string();
         assert_eq!("F32", reg_type);
     }
+
+    #[test]
+    #[ignore] //call this test alone
+    fn cli_test() {
+        use super::*;
+        use connect_and_read::coriolis_cli;
+        use modbusmap::build_hashmap;
+        println!("Running Main");
+        //let res = vec![0 as u16];
+        let path = String::from("ModbusMap.csv");
+        let my_hmap: HashMap<u16, String> = build_hashmap(&path);
+        let x = String::from("247").parse::<u16>().unwrap();
+        println!("reg 247: {:?}", my_hmap.get(&x).unwrap().as_str());
+        //match connect::read(252) {
+        match coriolis_cli(&my_hmap) {
+            Ok(_res) => {
+                println!("success!");
+                assert_eq!(1, 1);
+                //println!("ok {:?}", res);
+            }
+            Err(e) => println!("error  {:?}", e),
+        }
+    }
 }
