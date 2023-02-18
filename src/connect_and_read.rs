@@ -1,5 +1,5 @@
 use super::*;
-use std::{thread, time::Duration, process};
+use std::{process, thread, time::Duration};
 use tokio_modbus::client::Context;
 use tokio_serial::SerialPortBuilder;
 
@@ -64,9 +64,9 @@ pub fn read_f32_reg(read_bytes: Vec<u16>) -> f32 {
 
 #[tokio::main(flavor = "current_thread")]
 pub async fn coriolis_cli(my_map: &HashMap<u16, String>) -> Result<(), Box<dyn std::error::Error>> {
+    use std::io;
     use tokio_modbus::prelude::*;
     use tokio_serial::SerialStream;
-    use std::io;
     let tty_path: &str = get_com_port();
     //let tty_path = "/dev/ttyACM0";
     // modbus slave address 111
@@ -77,16 +77,22 @@ pub async fn coriolis_cli(my_map: &HashMap<u16, String>) -> Result<(), Box<dyn s
     let mut ctx: Context = rtu::connect_slave(port, slave).await?; //this connects to modem but not device
     println!("Connected to device at {}", &tty_path);
     //do cli here
-    
-    let mut input = String::new();
+
+    let input = String::new();
     while input != "x" {
-        println!("What reg to read? x to quit.");
+        let mut input = "".to_string();
+        println!("\nWhat reg to read? x to quit.");
         io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
+            .read_line(&mut input)
+            .expect("Failed to read line");
         println!("user typed: {}", &input);
-        if &input == "x" || &input == "X" {
-            break;
+        match &input.trim().to_string().to_lowercase() == "x" {
+            true => {
+                println!("user pressed X.");
+                //panic!("user exit.");
+                break;
+            }
+            false => (),
         }
         let addr: u16 = input.trim().parse::<u16>().unwrap();
         if my_map.contains_key(&addr) {
@@ -94,39 +100,42 @@ pub async fn coriolis_cli(my_map: &HashMap<u16, String>) -> Result<(), Box<dyn s
             //addr -= addr;
             match my_map.get(&addr).unwrap().as_str() {
                 "F32" => {
-                    let rsp: Result<Vec<u16>, std::io::Error> = ctx.read_holding_registers(addr-1, 2).await;
-        match rsp {
-            Ok(data) => {
-                println!("Reg {} type {} returned raw bytes: {:?}", addr, "F32", data);
-                println!("Float value: {}", read_f32_reg(data));
-            }
-            Err(e) => println!("Reg {} type {} produced: {:?}", addr, "F32", e),
-        }
-                },
+                    let rsp: Result<Vec<u16>, std::io::Error> =
+                        ctx.read_holding_registers(addr - 1, 2).await;
+                    match rsp {
+                        Ok(data) => {
+                            println!("Reg {} type {} returned raw bytes: {:?}", addr, "F32", data);
+                            println!("Float value: {}", read_f32_reg(data));
+                        }
+                        Err(e) => println!("Reg {} type {} produced: {:?}", addr, "F32", e),
+                    }
+                }
                 "U16" => {
-                    let rsp: Result<Vec<u16>, std::io::Error> = ctx.read_holding_registers(addr-1, 1).await;
-        match rsp {
-            Ok(data) => {
-                println!("Reg {} type {} returned raw bytes: {:?}", addr, "U16", data);
-            }
-            Err(e) => println!("Reg {} type {} produced: {:?}", addr, "U16", e),
-        }
-                },
+                    let rsp: Result<Vec<u16>, std::io::Error> =
+                        ctx.read_holding_registers(addr - 1, 1).await;
+                    match rsp {
+                        Ok(data) => {
+                            println!("Reg {} type {} returned raw bytes: {:?}", addr, "U16", data);
+                        }
+                        Err(e) => println!("Reg {} type {} produced: {:?}", addr, "U16", e),
+                    }
+                }
                 "U8" => {
-                    let rsp: Result<Vec<u16>, std::io::Error> = ctx.read_holding_registers(addr-1, 1).await;
-        match rsp {
-            Ok(data) => {
-                println!("Reg {} type {} returned raw bytes: {:?}", addr, "U8", data);
-            }
-            Err(e) => println!("Reg {} type {} produced: {:?}", addr, "U8", e),
-        }
-                },
-                _ => continue,
+                    let rsp: Result<Vec<u16>, std::io::Error> =
+                        ctx.read_holding_registers(addr - 1, 1).await;
+                    match rsp {
+                        Ok(data) => {
+                            println!("Reg {} type {} returned raw bytes: {:?}", addr, "U8", data);
+                        }
+                        Err(e) => println!("Reg {} type {} produced: {:?}", addr, "U8", e),
+                    }
+                }
+                _ => println!("Not handling type {} for reg {}",my_map.get(&addr).unwrap().as_str(), &addr),
             };
+        } else {
+            println!("Didn't find {} in map.", addr);
         }
     }
 
     Ok(())
 }
-
-

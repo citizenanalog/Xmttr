@@ -62,7 +62,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] //call this test alone
+    //#[ignore] //call this test alone
     fn cli_test() {
         use super::*;
         use connect_and_read::coriolis_cli;
