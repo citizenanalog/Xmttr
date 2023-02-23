@@ -94,7 +94,10 @@ pub async fn coriolis_cli(my_map: &HashMap<u16, String>) -> Result<(), Box<dyn s
             }
             false => (),
         }
-        let addr: u16 = input.trim().parse::<u16>().unwrap();
+        let addr: u16 = input.trim().parse::<u16>().unwrap_or_else(|err| {
+            println!("Problem parsing input: {}", err);
+            process::exit(1);
+        });
         if my_map.contains_key(&addr) {
             //do read on my_map.get
             //addr -= addr;
@@ -130,7 +133,11 @@ pub async fn coriolis_cli(my_map: &HashMap<u16, String>) -> Result<(), Box<dyn s
                         Err(e) => println!("Reg {} type {} produced: {:?}", addr, "U8", e),
                     }
                 }
-                _ => println!("Not handling type {} for reg {}",my_map.get(&addr).unwrap().as_str(), &addr),
+                _ => println!(
+                    "Not handling type {} for reg {}",
+                    my_map.get(&addr).unwrap().as_str(),
+                    &addr
+                ),
             };
         } else {
             println!("Didn't find {} in map.", addr);

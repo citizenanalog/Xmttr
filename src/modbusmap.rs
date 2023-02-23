@@ -30,15 +30,19 @@ pub fn build_hashmap(path: &str) -> HashMap<u16, String> {
     let mut hmap: HashMap<u16, String> = HashMap::new();
     for result in rdr.records() {
         let record = result.unwrap();
-        let reg_type = record.get(0).unwrap().to_string();
-        let addr = record
-            .get(1)
-            .unwrap()
-            .to_string()
-            .parse::<u16>()
-            .ok()
-            .unwrap();
-        hmap.entry(addr).or_insert(reg_type);
+        let reg_type = record.get(0);
+        let reg = match reg_type {
+            Some(reg) => reg.to_string(),
+            None => "U8".to_string(), //default type
+        };
+        let addr = record.get(1);
+        match addr {
+            Some(a) => {
+                let address = a.to_string().parse::<u16>().ok().unwrap();
+                hmap.entry(address).or_insert(reg);
+            }
+            None => continue, //ignore cells w/no address
+        };
     }
     return hmap;
 }

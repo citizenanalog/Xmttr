@@ -54,11 +54,13 @@ mod tests {
     fn build_hashmap() {
         use super::modbusmap::build_hashmap;
         use std::collections::HashMap;
-        let path = String::from("ModbusMap.csv");
+        //let path = String::from("ModbusMap.csv");
+        let path = String::from("map3.csv");
         let my_hmap: HashMap<u16, String> = build_hashmap(&path);
         let reg: u16 = 247; //mass flow rate should return type F32
         let reg_type: String = my_hmap.get(&reg).unwrap().to_string();
         assert_eq!("F32", reg_type);
+        println!("built map of length: {:?}", my_hmap.len());
     }
 
     #[test]
