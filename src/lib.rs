@@ -1,6 +1,98 @@
 pub mod connect_and_read;
 pub mod modbusmap;
 use std::collections::HashMap;
+use std::{
+    sync::{mpsc, Arc, Mutex},
+    thread,
+};
+
+pub struct ThreadPool {
+    workers: Vec<Worker>,
+    sender: Option<mpsc::Sender<Job>>,
+}
+
+type Job = Box<dyn FnOnce() + Send + 'static>;
+
+impl ThreadPool {
+    /// Create a new ThreadPool.
+    ///
+    /// The size is the number of threads in the pool.
+    ///
+    /// # Panics
+    ///
+    /// The `new` function will panic if the size is zero.
+    pub fn new(size: usize) -> ThreadPool {
+        assert!(size > 0);
+
+        let (sender, receiver) = mpsc::channel();
+
+        let receiver = Arc::new(Mutex::new(receiver));
+
+        let mut workers = Vec::with_capacity(size);
+
+        for id in 0..size {
+            workers.push(Worker::new(id, Arc::clone(&receiver)));
+        }
+
+        ThreadPool {
+            workers,
+            sender: Some(sender),
+        }
+    }
+
+    pub fn execute<F>(&self, f: F)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        let job = Box::new(f);
+
+        self.sender.as_ref().unwrap().send(job).unwrap();
+    }
+}
+
+impl Drop for ThreadPool {
+    fn drop(&mut self) {
+        drop(self.sender.take());
+
+        for worker in &mut self.workers {
+            println!("Shutting down worker {}", worker.id);
+
+            if let Some(thread) = worker.thread.take() {
+                thread.join().unwrap();
+            }
+        }
+    }
+}
+
+struct Worker {
+    id: usize,
+    thread: Option<thread::JoinHandle<()>>,
+}
+
+impl Worker {
+    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
+        let thread = thread::spawn(move || loop {
+            let message = receiver.lock().unwrap().recv();
+
+            match message {
+                Ok(job) => {
+                    println!("Worker {id} got a job; executing.");
+
+                    job();
+                }
+                Err(_) => {
+                    println!("Worker {id} disconnected; shutting down.");
+                    break;
+                }
+            }
+        });
+
+        Worker {
+            id,
+            thread: Some(thread),
+        }
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ModbusReg {
@@ -20,7 +112,7 @@ impl ModbusReg {
 
 #[cfg(test)]
 mod tests {
-    use crate::connect_and_read::read_f32_reg;
+    use crate::{connect_and_read::read_f32_reg, modbusmap::map_to_csv};
     #[test]
     fn float_read() {
         let my_word: Vec<u16> = vec![51867, 15673];
@@ -40,8 +132,8 @@ mod tests {
         let my_hmap: HashMap<u16, String> = build_hashmap(&path);
         //for loop if we want to call mod_main multiple times
 
-        //match connect::read(252) {
-        match mod_main(&my_hmap) {
+        let tty_path: &str = "/dev/ttyACM0";
+        match mod_main(&my_hmap, &tty_path) {
             Ok(_res) => {
                 println!("success!");
                 assert_eq!(1, 1);
@@ -61,6 +153,12 @@ mod tests {
         let reg_type: String = my_hmap.get(&reg).unwrap().to_string();
         assert_eq!("F32", reg_type);
         println!("built map of length: {:?}", my_hmap.len());
+        let mut sorted_values: Vec<(&u16, &String)> = my_hmap.iter().collect();
+        sorted_values.sort_by_key(|k| k.0);
+        println!("sorted by address: {:?}", sorted_values);
+        if let Err(e) = map_to_csv(my_hmap) {
+            println!("error: {}", e);
+        }
     }
 
     #[test]

@@ -15,11 +15,14 @@ pub fn get_com_port() -> &'static str {
 }
 
 #[tokio::main(flavor = "current_thread")]
-pub async fn mod_main(my_map: &HashMap<u16, String>) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn mod_main(
+    my_map: &HashMap<u16, String>,
+    tty_path: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
     use tokio_modbus::prelude::*;
     use tokio_serial::SerialStream;
 
-    let tty_path: &str = get_com_port();
+    //let tty_path: &str = get_com_port();
     //let tty_path = "/dev/ttyACM0";
     // modbus slave address 111
     let slave: Slave = Slave(0x6F);
@@ -30,18 +33,19 @@ pub async fn mod_main(my_map: &HashMap<u16, String>) -> Result<(), Box<dyn std::
     println!("Connected to device at {}", &tty_path);
     //read float register
     let mut count = 0;
-    while count < 1 {
-        let addr: u16 = 246;
+    while count < 10 {
+        let addr: u16 = 1199;
         // this will hang if no device connected.
-        let rsp: Result<Vec<u16>, std::io::Error> = ctx.read_holding_registers(addr, 2).await;
+        let rsp: Result<Vec<u16>, std::io::Error> = ctx.read_holding_registers(addr, 1).await;
         match rsp {
             Ok(data) => {
+                println!("device: {:?} readcount: {}", &tty_path, &count);
                 println!("Reg {} type {} returned raw bytes: {:?}", addr, "U16", data);
-                println!("Float value: {}", read_f32_reg(data));
+                //println!("Float value: {}", read_f32_reg(data));
             }
             Err(e) => println!("Reg {} type {} produced: {:?}", addr, "U16", e),
         }
-        thread::sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_millis(1000));
         count = count + 1;
     }
 

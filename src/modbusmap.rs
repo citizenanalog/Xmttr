@@ -1,5 +1,6 @@
 use super::*;
-use csv::Reader;
+use csv::{Reader, Writer, WriterBuilder};
+use std::error::Error;
 use std::fs::File;
 
 pub fn read_map(path: &str) -> Vec<ModbusReg> {
@@ -31,10 +32,21 @@ pub fn build_hashmap(path: &str) -> HashMap<u16, String> {
     for result in rdr.records() {
         let record = result.unwrap();
         let reg_type = record.get(0);
+        //change this to match empty string
         let reg = match reg_type {
-            Some(reg) => reg.to_string(),
-            None => "U8".to_string(), //default type
+            Some(reg) => {
+                if "" == reg.to_string() {
+                    "U8".to_string() //default type
+                } else {
+                    reg.to_string()
+                }
+            }
+            None => {
+                println!("reg_type: {:?}", reg_type);
+                "U8".to_string() //default type
+            }
         };
+
         let addr = record.get(1);
         match addr {
             Some(a) => {
@@ -45,4 +57,19 @@ pub fn build_hashmap(path: &str) -> HashMap<u16, String> {
         };
     }
     return hmap;
+}
+
+pub fn map_to_csv(hmap: HashMap<u16, String>) -> Result<(), Box<dyn Error>> {
+    // Open a file to write the CSV data to
+    let file = File::create("hmap.csv")?;
+
+    // Create a CSV writer with a default delimiter of ","
+    let mut writer = WriterBuilder::new().delimiter(b',').from_writer(file);
+
+    // Write the HashMap data to the CSV file
+    for (address, register) in hmap {
+        writer.write_record(&[address.to_string(), register])?;
+    }
+
+    Ok(())
 }
