@@ -21,7 +21,8 @@ mod tests {
         let path = String::from("ModbusMap.csv");
         let my_hmap: HashMap<u16, String> = build_hashmap(&path);
         //match connect::read(252) {
-        match mod_main(&my_hmap) {
+        let device = "COM9";
+        match mod_main(&my_hmap, device) {
             Ok(_res) => {
                 println!("success!");
                 assert_eq!(1, 1);
