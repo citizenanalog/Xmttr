@@ -9,6 +9,7 @@ pub fn get_com_port() -> &'static str {
     tty_path
 }
 #[cfg(target_os = "linux")]
+//this could find both ACM0 and ACM1
 pub fn get_com_port() -> &'static str {
     let tty_path: &str = "/dev/ttyACM0";
     tty_path
@@ -64,6 +65,36 @@ pub fn read_f32_reg(read_bytes: Vec<u16>) -> f32 {
     //convert be_bytes to float
     let float_value: f32 = f32::from_be_bytes(new_bytes);
     float_value
+}
+
+// Asynchronous TCP client 
+
+#[tokio::main(flavor = "current_thread")]
+pub async fn tcp_main(tty_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    use tokio_modbus::prelude::*;
+
+    let socket_addr = tty_path.parse().unwrap();
+
+    let mut ctx = tcp::connect(socket_addr).await?;
+
+    let mut count = 0;
+    while count < 10 {
+        let addr: u16 = 1199;
+        // this will hang if no device connected.
+        let rsp: Result<Vec<u16>, std::io::Error> = ctx.read_holding_registers(addr, 1).await;
+        match rsp {
+            Ok(data) => {
+                println!("device: {:?} readcount: {}", &tty_path, &count);
+                println!("Reg {} type {} returned raw bytes: {:?}", addr, "U16", data);
+                //println!("Float value: {}", read_f32_reg(data));
+            }
+            Err(e) => println!("Reg {} type {} produced: {:?}", addr, "U16", e),
+        }
+        thread::sleep(Duration::from_millis(1000));
+        count = count + 1;
+    }
+
+    Ok(())
 }
 
 #[tokio::main(flavor = "current_thread")]
