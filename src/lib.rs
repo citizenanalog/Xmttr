@@ -1,6 +1,7 @@
 pub mod connect_and_read;
 pub mod modbusmap;
 pub mod pool;
+pub mod setup;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

@@ -32,8 +32,10 @@ pub async fn mod_main(
     let mut ctx: Context = rtu::connect_slave(port, slave).await?; //this connects to modem but not device
     println!("Connected to device at {}", &tty_path);
     //read float register
+    thread::sleep(Duration::from_millis(1000));
+    println!("check");
     let mut count = 0;
-    while count < 10 {
+    while count < 1 {
         let addr: u16 = 1199;
         // this will hang if no device connected.
         let rsp: Result<Vec<u16>, std::io::Error> = ctx.read_holding_registers(addr, 1).await;
@@ -146,6 +148,44 @@ pub async fn coriolis_cli(my_map: &HashMap<u16, String>) -> Result<(), Box<dyn s
         } else {
             println!("Didn't find {} in map.", addr);
         }
+    }
+
+    Ok(())
+}
+
+#[tokio::main(flavor = "current_thread")]
+pub async fn logger(
+    my_map: &HashMap<u16, String>,
+    tty_path: &str,
+    mb_addr: u8,
+    regs: Vec<u16>,
+    log_interval: u64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use tokio_modbus::prelude::*;
+    use tokio_serial::SerialStream;
+    
+    let slave: Slave = Slave(mb_addr);
+    let builder: SerialPortBuilder = tokio_serial::new(tty_path, 38400);
+    //error handling for no device
+    let port: SerialStream = SerialStream::open(&builder).expect("No device detected");
+    let mut ctx: Context = rtu::connect_slave(port, slave).await?; //this connects to modem but not device
+    println!("Connected to device at {}", &tty_path);
+    //loop around the length of regs
+    let mut count = 0;
+    while count < 10 {
+        let addr: u16 = regs[0];
+        // this will hang if no device connected.
+        let rsp: Result<Vec<u16>, std::io::Error> = ctx.read_holding_registers(addr, 1).await;
+        match rsp {
+            Ok(data) => {
+                println!("device: {:?} readcount: {}", &tty_path, &count);
+                println!("Reg {} type {} returned raw bytes: {:?}", addr, "U16", data);
+                //println!("Float value: {}", read_f32_reg(data));
+            }
+            Err(e) => println!("Reg {} type {} produced: {:?}", addr, "U16", e),
+        }
+        thread::sleep(Duration::from_millis(log_interval));
+        count = count + 1;
     }
 
     Ok(())
