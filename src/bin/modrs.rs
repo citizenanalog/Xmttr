@@ -17,7 +17,7 @@ use xmttr::{
 fn main() {
     //read the config file
     let new_config = setup::read_config();
-    
+
     let path = String::from("ModbusMap.csv");
     let my_hmap: HashMap<u16, String> = build_hashmap(&path);
 
@@ -26,7 +26,7 @@ fn main() {
 
     //unpack the config here
     let com_list = new_config.ComPort;
-    
+
     let mb_addr = new_config.ModbusAddress;
     let interval = new_config.log_interval;
     for device in com_list {
