@@ -24,7 +24,7 @@ fn main() {
         let com_list = ["/dev/ttyACM0", "/dev/ttyACM1"];
         com_list
     }
-    
+
     let path = String::from("ModbusMap.csv");
     let my_hmap: HashMap<u16, String> = build_hashmap(&path);
 

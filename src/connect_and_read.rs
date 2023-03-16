@@ -34,7 +34,6 @@ pub async fn mod_main(
     println!("Connected to device at {}", &tty_path);
     //read float register
     thread::sleep(Duration::from_millis(1000));
-    println!("check");
     let mut count = 0;
     while count < 1 {
         let addr: u16 = 1199;
@@ -203,20 +202,29 @@ pub async fn logger(
     println!("Connected to device at {}", &tty_path);
     //loop around the length of regs
     let mut count = 0;
+    let mut reg_index = 0;
     while count < 10 {
-        let addr: u16 = regs[0];
-        // this will hang if no device connected.
-        let rsp: Result<Vec<u16>, std::io::Error> = ctx.read_holding_registers(addr, 1).await;
+        let addr: u16 = regs[reg_index];
+        // match reg type
+
+        let plus_one = addr + 1; //reg offset by 1
+        //use HashMap lookup to get reg_count and reg_type
+        let map_value = my_map.get(&plus_one).unwrap().as_str();
+        let reg_type: char = map_value.chars().nth(0).unwrap();
+        let reg_count = map_value[1..].parse::<u16>().unwrap();
+
+        let rsp: Result<Vec<u16>, std::io::Error> = ctx.read_holding_registers(plus_one, 1).await;
         match rsp {
             Ok(data) => {
-                println!("device: {:?} readcount: {}", &tty_path, &count);
-                println!("Reg {} type {} returned raw bytes: {:?}", addr, "U16", data);
+                
+                println!("Reg {} type {} returned raw bytes: {:?}", addr, &reg_type, data);
                 //println!("Float value: {}", read_f32_reg(data));
             }
-            Err(e) => println!("Reg {} type {} produced: {:?}", addr, "U16", e),
+            Err(e) => println!("Reg {} type {} produced: {:?}", addr, &reg_type, e),
         }
         thread::sleep(Duration::from_millis(log_interval));
-        count = count + 1;
+        count += 1;
+        reg_index += 1;
     }
 
     Ok(())

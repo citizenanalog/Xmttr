@@ -21,20 +21,17 @@ fn main() {
     let path = String::from("ModbusMap.csv");
     let my_hmap: HashMap<u16, String> = build_hashmap(&path);
 
-    let pool = ThreadPool::new(1);
+    //let pool = ThreadPool::new(1);
     //let com_list = ["/dev/ttyACM0", "/dev/ttyACM1"];
 
     //unpack the config here
     let com_list = new_config.ComPort;
-
     let mb_addr = new_config.ModbusAddress;
     let interval = new_config.log_interval;
-    for device in com_list {
-        let hmap = my_hmap.clone();
-        let regs = new_config.Regs.clone();
-        pool.execute(move || {
-            logger(&hmap, &device, mb_addr.clone(), regs, interval.clone());
-        });
+    let hmap = my_hmap.clone();
+    let regs = new_config.Regs.clone();
+    if let Err(e) = logger(&hmap, &com_list[0], mb_addr.clone(), regs, interval.clone()) {
+        println!("error occurred. {:?}", e);
     }
 
     println!("Shutting down.");

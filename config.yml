@@ -1,4 +1,4 @@
-ComPort: [COM9]
+ComPort: [COM4]
 ModbusAddress: 111
 Regs:
   - 1199
