@@ -3,5 +3,6 @@ ModbusAddress: 111
 Regs:
   - 1200
   - 247
-  - 95
-log_interval: 1000
+  - 96
+  - 104
+log_interval: 0

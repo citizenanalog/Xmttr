@@ -21,7 +21,7 @@ fn main() {
     }
     #[cfg(target_os = "linux")]
     pub fn get_com_port() -> &'static str {
-        let com_list = ["/dev/ttyACM0", "/dev/ttyACM1"];
+        let com_list = "/dev/ttyACM0";
         com_list
     }
 

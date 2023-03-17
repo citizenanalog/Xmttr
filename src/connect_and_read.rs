@@ -1,5 +1,5 @@
 use super::*;
-use std::{process, thread, time::Duration};
+use std::{error::Error, process, thread, time::Duration};
 use tokio_modbus::client::Context;
 use tokio_serial::SerialPortBuilder;
 
@@ -67,7 +67,21 @@ pub fn read_f32_reg(read_bytes: Vec<u16>) -> f32 {
     let float_value: f32 = f32::from_be_bytes(new_bytes);
     float_value
 }
+/// decode Generic register
+pub fn decode_ascii(read_bytes: Vec<u16>) -> Result<String, Box<dyn std::error::Error>> {
+    //setup the new u8 vec
+    //go to len x2 and split string at '\0L'
+    //this only valid up to len 38 (or A18)
+    let mut vec_u8: Vec<u8> = Vec::with_capacity(read_bytes.len() * 2);
+    read_bytes.into_iter().for_each(|val| {
+        vec_u8.extend(&val.to_be_bytes());
+    });
+    // TODO: refactor, exception panics here
+    let split_string = String::from_utf8(vec_u8).expect("invalid utf-8 seq");
+    let s: Vec<&str> = split_string.split("\0L").collect();
 
+    Ok(s[0].to_string())
+}
 // Asynchronous TCP client
 
 #[tokio::main(flavor = "current_thread")]
@@ -188,7 +202,7 @@ pub async fn logger(
     my_map: &HashMap<u16, String>,
     tty_path: &str,
     mb_addr: u8,
-    regs: Vec<u16>,
+    regs: &Vec<u16>,
     log_interval: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use tokio_modbus::prelude::*;
@@ -201,46 +215,58 @@ pub async fn logger(
     let mut ctx: Context = rtu::connect_slave(port, slave).await?; //this connects to modem but not device
     println!("Connected to device at {}", &tty_path);
     //loop around the length of regs
-    let mut count = 0;
+    //let mut count = 0;
     let mut reg_index = 0;
-    while count < 10 {
+    loop {
         let addr: u16 = regs[reg_index];
 
         if my_map.contains_key(&addr) {
             //use HashMap lookup to get reg_count and reg_type
-        let map_value = my_map.get(&addr).unwrap().as_str();
-        let reg_type: char = map_value.chars().nth(0).unwrap();
-        let reg_count = map_value[1..].parse::<u16>().unwrap();
-            //do read on my_map.get
-            //addr -= addr;
-            match my_map.get(&addr).unwrap().as_str() {
-                "F32" => {
+            let map_value = my_map.get(&addr).unwrap().as_str();
+            let reg_type: char = map_value.chars().nth(0).unwrap();
+            let reg_count = map_value[1..].parse::<u16>().unwrap();
+            match reg_type {
+                'F' => {
                     let rsp: Result<Vec<u16>, std::io::Error> =
                         ctx.read_holding_registers(addr - 1, 2).await;
                     match rsp {
                         Ok(data) => {
                             println!("Reg {} returned Float value: {}", &addr, read_f32_reg(data));
-                        
                         }
                         Err(e) => println!("Reg {} type {} produced: {:?}", &addr, &map_value, e),
                     }
                 }
-                "U16" => {
+                'U' => {
                     let rsp: Result<Vec<u16>, std::io::Error> =
                         ctx.read_holding_registers(addr - 1, 1).await;
                     match rsp {
                         Ok(data) => {
-                            println!("Reg {} type {} returned raw bytes: {:?}", &addr, &map_value, data);
+                            println!(
+                                "Reg {} type {} returned raw bytes: {:?}",
+                                &addr, &map_value, data
+                            );
                         }
                         Err(e) => println!("Reg {} type {} produced: {:?}", &addr, &map_value, e),
                     }
                 }
-                "U8" => {
+                'A' => {
                     let rsp: Result<Vec<u16>, std::io::Error> =
-                        ctx.read_holding_registers(addr - 1, 1).await;
+                        ctx.read_holding_registers(addr - 1, reg_count / 2).await;
                     match rsp {
                         Ok(data) => {
-                            println!("Reg {} type {} returned raw bytes: {:?}", &addr, &map_value, data);
+                            let res = decode_ascii(data);
+                            match res {
+                                Ok(data) => {
+                                    println!(
+                                        "Reg {} type {} returned raw bytes: {:?}",
+                                        &addr, &map_value, data
+                                    );
+                                }
+                                Err(e) => println!(
+                                    "Reg {} type {} returned error {:?}",
+                                    &addr, &map_value, e
+                                ),
+                            }
                         }
                         Err(e) => println!("Reg {} type {} produced: {:?}", &addr, &map_value, e),
                     }
@@ -257,14 +283,14 @@ pub async fn logger(
         /*let rsp: Result<Vec<u16>, std::io::Error> = ctx.read_holding_registers(addr, 1).await;
         match rsp {
             Ok(data) => {
-                
+
                 println!("Reg {} type {} returned raw bytes: {:?}", addr, &reg_type, data);
                 //println!("Float value: {}", read_f32_reg(data));
             }
             Err(e) => println!("Reg {} type {} produced: {:?}", addr, &reg_type, e),
         }*/
         thread::sleep(Duration::from_millis(log_interval));
-        count += 1;
+        //count += 1;
         reg_index = (reg_index + 1) % regs.len();
     }
 

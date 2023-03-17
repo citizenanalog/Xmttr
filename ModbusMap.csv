@@ -50,6 +50,9 @@ U16,47,Hart Slave Address
 U32,48,Final assembly number       NOTE: HART supports only the lower three bytes and
 U8,50,Fixed Date Low order byte: day
 U16,51,Fixed Date High order byte: month
+A16,88,Flow calibration factor
+A16,96,Description
+A32,104,User Message
 U16,120,Device type code
 U16,121,Manufacturer I.D.
 U24,122,HART device I.D. number
@@ -232,6 +235,7 @@ U16,421,Bit #0 – Burst Mode Enabled (A106) (AI Simulate enabled on 2700 PA v2.
 U16,422,Bit #0 – API.VCF:  Temperature Outside Standard Range (A116)
 U16,423,Bit #0 – Core Protected Boot Sector Fault (invalid/corrupt application) (A25)
 U16,424,"Bit #0 – Discrete Input 1 Status (0=OFF, 1=ON)"
+A16,425,Sensor Type
 U16,433,Bit #0 – K1/FCF Combination Unrecognized
 U16,434,Bit #0 – Attached core data loss possible
 F32,435,Sensor Maximum Recorded Temperature
