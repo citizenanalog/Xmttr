@@ -205,15 +205,56 @@ pub async fn logger(
     let mut reg_index = 0;
     while count < 10 {
         let addr: u16 = regs[reg_index];
-        // match reg type
 
-        let plus_one = addr + 1; //reg offset by 1
-        //use HashMap lookup to get reg_count and reg_type
-        let map_value = my_map.get(&plus_one).unwrap().as_str();
+        if my_map.contains_key(&addr) {
+            //use HashMap lookup to get reg_count and reg_type
+        let map_value = my_map.get(&addr).unwrap().as_str();
         let reg_type: char = map_value.chars().nth(0).unwrap();
         let reg_count = map_value[1..].parse::<u16>().unwrap();
-
-        let rsp: Result<Vec<u16>, std::io::Error> = ctx.read_holding_registers(plus_one, 1).await;
+            //do read on my_map.get
+            //addr -= addr;
+            match my_map.get(&addr).unwrap().as_str() {
+                "F32" => {
+                    let rsp: Result<Vec<u16>, std::io::Error> =
+                        ctx.read_holding_registers(addr - 1, 2).await;
+                    match rsp {
+                        Ok(data) => {
+                            println!("Reg {} returned Float value: {}", &addr, read_f32_reg(data));
+                        
+                        }
+                        Err(e) => println!("Reg {} type {} produced: {:?}", &addr, &map_value, e),
+                    }
+                }
+                "U16" => {
+                    let rsp: Result<Vec<u16>, std::io::Error> =
+                        ctx.read_holding_registers(addr - 1, 1).await;
+                    match rsp {
+                        Ok(data) => {
+                            println!("Reg {} type {} returned raw bytes: {:?}", &addr, &map_value, data);
+                        }
+                        Err(e) => println!("Reg {} type {} produced: {:?}", &addr, &map_value, e),
+                    }
+                }
+                "U8" => {
+                    let rsp: Result<Vec<u16>, std::io::Error> =
+                        ctx.read_holding_registers(addr - 1, 1).await;
+                    match rsp {
+                        Ok(data) => {
+                            println!("Reg {} type {} returned raw bytes: {:?}", &addr, &map_value, data);
+                        }
+                        Err(e) => println!("Reg {} type {} produced: {:?}", &addr, &map_value, e),
+                    }
+                }
+                _ => println!(
+                    "Not handling type {} for reg {}",
+                    my_map.get(&addr).unwrap().as_str(),
+                    &addr
+                ),
+            };
+        } else {
+            println!("Didn't find {} in map.", addr);
+        }
+        /*let rsp: Result<Vec<u16>, std::io::Error> = ctx.read_holding_registers(addr, 1).await;
         match rsp {
             Ok(data) => {
                 
@@ -221,10 +262,10 @@ pub async fn logger(
                 //println!("Float value: {}", read_f32_reg(data));
             }
             Err(e) => println!("Reg {} type {} produced: {:?}", addr, &reg_type, e),
-        }
+        }*/
         thread::sleep(Duration::from_millis(log_interval));
         count += 1;
-        reg_index += 1;
+        reg_index = (reg_index + 1) % regs.len();
     }
 
     Ok(())

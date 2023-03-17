@@ -1,5 +1,7 @@
-ComPort: [COM4]
+ComPort: [/dev/ttyACM0]
 ModbusAddress: 111
 Regs:
-  - 1199
+  - 1200
+  - 247
+  - 95
 log_interval: 1000

@@ -26,7 +26,7 @@ pub fn read_config() -> Config {
     let com: &Vec<String> = config.ComPort.as_ref();
     let interval = config.log_interval;
     println!(
-        "Initializing {:?} with regs: {:?} and {interval}",
+        "Initializing {:?} with regs: {:?} and logging interval {interval} ms",
         com, regs
     );
     config
