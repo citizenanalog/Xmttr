@@ -1,8 +1,10 @@
-ComPort: [/dev/ttyACM0]
+ComPort: [/dev/ttyACM1]
 ModbusAddress: 111
 Regs:
   - 1200
   - 247
-  - 96
-  - 104
-log_interval: 0
+  - 367
+  - 285
+  - 401
+  - 383
+log_interval: 1000

@@ -1,7 +1,7 @@
 use super::*;
 use std::{error::Error, process, thread, time::Duration};
 use tokio_modbus::client::Context;
-use tokio_serial::SerialPortBuilder;
+use tokio_serial::{SerialPortBuilder, SerialPort};
 
 #[cfg(target_os = "windows")]
 pub fn get_com_port() -> &'static str {
@@ -211,9 +211,14 @@ pub async fn logger(
     let slave: Slave = Slave(mb_addr);
     let builder: SerialPortBuilder = tokio_serial::new(tty_path, 38400);
     //error handling for no device
-    let port: SerialStream = SerialStream::open(&builder).expect("No device detected");
+    let mut port: SerialStream = SerialStream::open(&builder).expect("No device detected");
+    //write DTR pin
+    if let Err(e) = port.write_data_terminal_ready(true) {
+        println!("Problem writing DTR: {:?}", e);
+    }
     let mut ctx: Context = rtu::connect_slave(port, slave).await?; //this connects to modem but not device
-    println!("Connected to device at {}", &tty_path);
+    println!("Connected to {}", &tty_path);
+    
     //loop around the length of regs
     //let mut count = 0;
     let mut reg_index = 0;
